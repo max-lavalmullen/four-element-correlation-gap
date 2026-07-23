@@ -1,0 +1,741 @@
+% Standalone proof, also input by correlation-gap-n4-full.tex.
+% Candidate resolution pending expert review; frozen campaign date 2026-07-21.
+\ifdefined\CGFullPaper
+\let\ProofOnlyEndDocument\relax
+\else
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs,array}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\allowdisplaybreaks
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\E}{\mathbb E}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\D}{\mathcal D}
+\newcommand{\DPI}{\mathcal D_{\mathrm{PI}}}
+\newcommand{\Cfour}{C_4}
+\newcommand{\Fslice}{\mathcal F}
+\newcommand{\CGfour}{\mathrm{CG4}}
+\newcommand{\Rge}{\mathbb R_{\ge 0}}
+
+\title{Proof of the Four-Element Pairwise-Independent Correlation Gap}
+\author{Max Laval-Mullen\\\small Independent researcher}
+\date{July 22, 2026}
+\begin{document}
+\def\ProofOnlyEndDocument{\end{document}}
+\maketitle
+
+\begin{abstract}
+We prove, subject to an exact finite certificate described below, that for
+every nonnegative monotone submodular function on a four-element ground set
+and every real vector of singleton marginals, the unrestricted concave
+closure is at most \(4/3\) times its pairwise-independent analogue.  The
+constant is sharp.  The finite premise is checked with exact rational
+arithmetic and replayed by a separate Node.js/\texttt{BigInt}
+implementation.
+\end{abstract}
+
+\section{Proof of the four-element theorem}\label{sec:proof}
+
+\subsection{Statement and exact negation}\label{subsec:statement}
+
+Let \(E=[4]\).  For a probability law \(p\) on \(2^E\), write
+\(p_S=\Pr_p(S)\).  Given \(x\in[0,1]^4\), define
+\[
+\D(x)=\left\{p\in\Rge^{\,2^E}:\sum_{S\subseteq E}p_S=1,
+\quad \sum_{S\ni i}p_S=x_i\quad(i\in E)\right\}.
+\]
+Let \(\DPI(x)\) be the subset additionally satisfying
+\[
+\sum_{S\supseteq\{i,j\}}p_S=x_i x_j\qquad(i<j).
+\]
+For a nonnegative monotone submodular set function
+\(f:2^E\to\Rge\), put
+\[
+f^+(x)=\max_{p\in\D(x)}\E_p f,
+\qquad
+f^{\mathrm{PI}}(x)=\max_{q\in\DPI(x)}\E_q f.
+\]
+
+\begin{theorem}[Four-element pairwise-independent correlation gap]
+\label{thm:main}
+For every nonnegative monotone submodular
+\(f:2^{[4]}\to\Rge\) and every real \(x\in[0,1]^4\),
+\[
+3f^+(x)\le 4f^{\mathrm{PI}}(x).
+\tag{CG4}\label{eq:CG4}
+\]
+The factor \(4/3\) is best possible.
+\end{theorem}
+
+The exact negation of \eqref{eq:CG4} is the existence of admissible
+\((f,x)\) and \(p\in\D(x)\) such that
+\[
+3\E_p f>4\E_q f
+\qquad\text{for every }q\in\DPI(x).
+\tag{NEG}\label{eq:neg}
+\]
+The universal quantifier over \(q\) is essential.
+
+\subsection{Normalization}\label{subsec:normalization}
+
+\begin{lemma}[Normalization]\label{lem:normalization}
+It is enough, in both the proof and disproof directions, to consider
+functions satisfying \(f(\varnothing)=0\).
+\end{lemma}
+
+\begin{proof}
+Put \(c=f(\varnothing)\ge0\) and \(g=f-c\).  Monotonicity gives \(g\ge0\),
+and subtracting a constant preserves monotonicity and submodularity.  Every
+expectation shifts by \(c\), so
+\[
+f^+=c+g^+,
+\qquad
+f^{\mathrm{PI}}=c+g^{\mathrm{PI}}.
+\tag{2.1}\label{eq:shift}
+\]
+If \eqref{eq:CG4} holds for \(g\), then
+\[
+c+g^+\le c+\frac43g^{\mathrm{PI}}
+\le\frac43(c+g^{\mathrm{PI}}).
+\]
+Conversely, a strict violation by \(f\) gives
+\[
+g^+>\frac43g^{\mathrm{PI}}+\frac c3
+\ge\frac43g^{\mathrm{PI}}.
+\]
+Thus normalization loses neither direction.
+\end{proof}
+
+Let \(\Cfour\) be the cone of normalized monotone submodular functions on
+\(E\).  If \(g\in\Cfour\) and \(g(E)=0\), monotonicity forces \(g=0\).
+Every nonzero member can therefore be scaled uniquely into
+\[
+\Fslice=\{g\in\Cfour:g(E)=1\}.
+\]
+This is a nonempty compact convex polytope, since
+\(0\le g(S)\le1\) for every \(S\subseteq E\).
+
+\subsection{The simultaneous-dominance reduction}
+\label{subsec:minimax}
+
+\begin{lemma}[Simultaneous dominance]\label{lem:minimax}
+For fixed \(x\), \eqref{eq:CG4} for all normalized functions is equivalent
+to the following statement: for every \(p\in\D(x)\), there is one
+\(q\in\DPI(x)\) such that
+\[
+4\E_q g\ge3\E_p g\qquad(g\in\Cfour).
+\tag{3.1}\label{eq:simultaneous}
+\]
+\end{lemma}
+
+\begin{proof}
+Fix \(p\), let \(Q=\DPI(x)\), and define
+\[
+L(g,q)=3\E_p g-4\E_q g
+\qquad(g\in\Fslice,\ q\in Q).
+\]
+The product law lies in \(Q\), so \(Q\) is nonempty; it is also compact and
+convex.  Finite-dimensional bilinear minimax gives
+\[
+\max_{g\in\Fslice}\min_{q\in Q}L(g,q)
+=
+\min_{q\in Q}\max_{g\in\Fslice}L(g,q).
+\tag{3.2}\label{eq:minimax}
+\]
+For fixed \(g\), the inner minimum on the left is
+\[
+3\E_p g-4g^{\mathrm{PI}}(x).
+\]
+If \eqref{eq:CG4} holds, this is nonpositive for every \(p\) and \(g\),
+because \(\E_p g\le g^+(x)\).  Equation \eqref{eq:minimax} then supplies a
+single \(q\) for which \(L(g,q)\le0\) for every \(g\in\Fslice\).
+Homogeneity extends the result from \(\Fslice\) to \(\Cfour\), including the
+zero function.
+
+Conversely, apply \eqref{eq:simultaneous} to a maximizer \(p\) of
+\(g^+(x)\).  Then
+\[
+3g^+(x)\le4\E_q g\le4g^{\mathrm{PI}}(x).
+\]
+\end{proof}
+
+This is the reason that one may use a common finite ray test.  Choosing a
+different \(q\) for each ray would not prove
+\eqref{eq:simultaneous}.
+
+\subsection{Extreme unrestricted laws and sorting}
+\label{subsec:extreme-laws}
+
+Let \(A\) be the \(5\times16\) first-moment matrix with columns
+\[
+a(S)=(1,\one_{1\in S},\ldots,\one_{4\in S})^T.
+\]
+It has rank five.
+Indeed, the columns indexed by \(\varnothing,\{1\},\ldots,\{4\}\) are
+linearly independent.
+
+\begin{lemma}[Extreme-law reduction]\label{lem:extreme-laws}
+It is enough to prove \eqref{eq:simultaneous} for extreme points of
+\(\D(x)\).  Every such point has an affinely independent positive support of
+size at most five, and every smaller support extends to a five-column basis
+of \(A\).
+\end{lemma}
+
+\begin{proof}
+If \(p=\sum_t\alpha_t p^{(t)}\) is a convex combination of extreme laws and
+\(q^{(t)}\) simultaneously dominates \(p^{(t)}\), then
+\(q=\sum_t\alpha_tq^{(t)}\) has the same mass, first moments, and pair
+moments as every \(q^{(t)}\).  Hence \(q\in\DPI(x)\), and linearity gives
+\eqref{eq:simultaneous}.
+
+If the columns \(a(S)\) in the positive support of an extreme \(p\) were
+linearly dependent, a nonzero supported vector \(h\) would satisfy \(Ah=0\).
+For sufficiently small \(\varepsilon>0\), both \(p+\varepsilon h\) and
+\(p-\varepsilon h\) would be distinct feasible laws, contradicting
+extremality.  Thus the support columns are independent and there are at most
+five.  The basis-extension theorem extends any independent subset of columns
+to a five-column basis.  Assigning zero weights to the added masks realizes
+the original law on a face of that basis simplex.
+\end{proof}
+
+There are exactly \(3{,}008\) such five-column bases; this is independently
+recomputed by exact rank enumeration.  All objects are equivariant under a
+simultaneous permutation of the four ground elements.  We may therefore
+relabel \(x,p\), apply the construction, and pull the resulting \(q\) back.
+Hence it is enough to consider
+\[
+0\le x_1\le x_2\le x_3\le x_4\le1.
+\tag{4.1}\label{eq:sorted}
+\]
+Ties cause no difficulty because every region below is closed.
+
+\subsection{Two analytic regions}\label{subsec:analytic-regions}
+
+\subsubsection{Low total marginal}
+
+\begin{lemma}[Low-total region]\label{lem:low-total}
+If \(s=\sum_i x_i\le1\), then \eqref{eq:CG4} holds.
+\end{lemma}
+
+\begin{proof}
+Assume \eqref{eq:sorted}.  Prescribe candidate intersection moments by
+\(m_i=x_i\), \(m_{ij}=x_ix_j\), and, for \(|T|\ge3\), let \(m_T\) be the
+product of the two smallest marginals indexed by \(T\).  M\"obius inversion
+gives the following potentially nonzero atom masses; all unlisted masses are
+zero:
+\[
+\begin{array}{c@{\qquad}l}
+\toprule
+T&q_T\\
+\midrule
+\varnothing&1-s+x_4(s-x_4)\\
+\{i\},\ i=1,2,3&x_i(1-x_4)\\
+\{4\}&x_4(1-s+x_4)+x_3(x_1+x_2)\\
+\{1,4\},\{2,4\}&x_1(x_4-x_3),\quad x_2(x_4-x_3)\\
+\{3,4\}&x_3(x_4-x_1-x_2)+x_1x_2\\
+\{1,3,4\},\{2,3,4\}&x_1(x_3-x_2),\quad x_2(x_3-x_1)\\
+E&x_1x_2\\
+\bottomrule
+\end{array}
+\tag{5.1}\label{eq:low-atoms}
+\]
+The empty mass is nonnegative because \(s\le1\).  All other masses are
+manifestly nonnegative except possibly \(q_{\{3,4\}}\), and
+\[
+q_{\{3,4\}}
+\ge x_3(x_3-x_1-x_2)+x_1x_2
+=(x_3-x_1)(x_3-x_2)\ge0.
+\]
+The displayed nonnegative masses define a law \(Q\); equivalently, their
+M\"obius transform is the prescribed moment vector and in particular has
+total mass one.  The defining intersection moments show exactly that \(Q\) has marginals
+\(x_i\) and pair intersections \(x_ix_j\), so it is pairwise independent.
+
+For every \(A\subseteq E\),
+\[
+\Pr(Q\cap A\ne\varnothing)
+\ge\frac34\sum_{i\in A}x_i.
+\tag{5.2}\label{eq:hit-bound}
+\]
+For two coordinates with sum \(r\le1\), this follows from
+\(4uv\le(u+v)^2\le u+v=r\).  For three coordinates with sorted marginals
+\(a\le b\le c\), inclusion--exclusion and the chosen triple moment give
+\[
+\Pr(Q\cap A\ne\varnothing)=c+(a+b)-c(a+b),
+\]
+and the same inequality applies because \(c+a+b\le1\).  For \(A=E\), the
+union probability is \(s-x_4(s-x_4)\), and the identical argument uses
+\(c=x_4\), \(a+b=s-x_4\).  Singletons are immediate.
+
+Normalize \(f(\varnothing)=0\), put \(a_i=f(\{i\})\), and define
+\(h(\varnothing)=0\) and \(h(T)=\max_{i\in T}a_i\) for nonempty \(T\).
+Monotonicity gives \(f\ge h\).  Layer cake and \eqref{eq:hit-bound} give
+\[
+\begin{aligned}
+\E h(Q)
+&=\int_0^\infty
+\Pr\!\left(Q\cap\{i:a_i\ge u\}\ne\varnothing\right)\,du\\
+&\ge\frac34\sum_i x_i a_i.
+\end{aligned}
+\tag{5.3}\label{eq:layer-cake}
+\]
+Normalized submodularity implies subadditivity and hence
+\(f(T)\le\sum_{i\in T}a_i\).  Thus every law with marginals \(x\) has
+expected value at most \(\sum_i x_i a_i\).  The law with mass \(x_i\) on
+\(\{i\}\) and mass \(1-s\) on \(\varnothing\) attains the bound, so
+\[
+f^+(x)=\sum_i x_i a_i.
+\]
+Together with \eqref{eq:layer-cake}, this proves
+\(f^{\mathrm{PI}}(x)\ge3f^+(x)/4\).  The argument uses no division and
+includes all zero and deterministic boundary cases.
+\end{proof}
+
+\subsubsection{A large marginal}
+
+We use the exact three-element theorem
+\[
+4u^{\mathrm{PI}}(y)\ge3u^+(y)
+\tag{N3}\label{eq:n3}
+\]
+for every normalized nonnegative monotone submodular \(u\) and every real
+\(y\in[0,1]^3\); see Ramachandra and Natarajan~\cite{RN2025} and the exact
+campaign reconstruction.
+
+\begin{lemma}[Large-coordinate region]\label{lem:large-coordinate}
+If \(x_i=t\ge2/3\) for some coordinate, then \eqref{eq:CG4} holds.
+\end{lemma}
+
+\begin{proof}
+Normalize \(f(\varnothing)=0\), put \(a=f(\{i\})\), and for
+\(T\subseteq E\setminus\{i\}\) define
+\[
+G(T)=(1-t)f(T)+t f(T\cup\{i\}).
+\tag{5.4}\label{eq:G}
+\]
+Here \(T\mapsto f(T)\) is deletion of coordinate \(i\), while
+\(T\mapsto f(T\cup\{i\})\) is contraction.  Deletion and contraction preserve nonnegativity, monotonicity, and
+submodularity; so does their convex combination.  Also
+\(G(\varnothing)=ta\), and monotonicity gives
+\(G-G(\varnothing)\ge0\).  Applying \eqref{eq:n3} to
+\(G-G(\varnothing)\) yields the strengthened nonnormalized form
+\[
+4G^{\mathrm{PI}}(x_{-i})\ge3G^+(x_{-i})+ta.
+\tag{5.5}\label{eq:G-n3}
+\]
+Adjoin to any three-coordinate PI law an independent Bernoulli-\(t\) bit at
+coordinate \(i\).  This is a four-coordinate PI law and its expected
+\(f\)-value is the expected \(G\)-value.  Hence
+\[
+f^{\mathrm{PI}}(x)\ge G^{\mathrm{PI}}(x_{-i}).
+\tag{5.6}\label{eq:adjoin}
+\]
+Let \(P\) attain \(f^+(x)\), write \(X_i\) for its \(i\)-th bit and
+\(Y=S\setminus\{i\}\), and set
+\[
+d(Y)=f(Y\cup\{i\})-f(Y).
+\]
+Diminishing returns and monotonicity give \(0\le d(Y)\le a\).  If only
+\(X_i\) is independently resampled with mean \(t\), its expected value is
+\[
+R=\E[(1-t)f(Y)+t f(Y\cup\{i\})]
+=\E G(Y)\le G^+(x_{-i}).
+\tag{5.7}\label{eq:R}
+\]
+Moreover,
+\[
+\begin{aligned}
+f^+(x)-R
+&=\E[(X_i-t)d(Y)]\\
+&\le(1-t)\E[X_i d(Y)]\\
+&\le t(1-t)a.
+\end{aligned}
+\tag{5.8}\label{eq:cov-loss}
+\]
+Combining \eqref{eq:G-n3}--\eqref{eq:cov-loss},
+\[
+4f^{\mathrm{PI}}(x)
+\ge3f^+(x)+ta(3t-2)
+\ge3f^+(x).
+\]
+This includes \(t=2/3\), \(t=1\), and \(a=0\).
+\end{proof}
+
+By Lemmas~\ref{lem:low-total} and~\ref{lem:large-coordinate}, after sorting
+it remains only to cover the closed central region
+\[
+0\le x_1\le x_2\le x_3\le x_4\le\frac23,
+\qquad
+\sum_i x_i\ge1.
+\tag{C}\label{eq:central}
+\]
+Using a closed superset is deliberate: the two analytic regions already
+cover the equality walls, and overlap creates no gap.
+
+\subsection{The finite normalized-function test}
+\label{subsec:cone}
+
+For \(i\notin S\), write \(S+i=S\cup\{i\}\); for distinct
+\(i,j\notin S\), write \(S+i+j=S\cup\{i,j\}\).  Also write
+\(\Delta_i g(S)=g(S\cup\{i\})-g(S)\).  The normalized cone \(\Cfour\) is
+defined exactly by the four terminal marginal inequalities
+\[
+g(E)-g(E\setminus\{i\})\ge0
+\tag{M}\label{eq:terminal-monotonicity}
+\]
+and the \(24\) elementary diminishing-returns inequalities
+\[
+g(S+i)+g(S+j)-g(S)-g(S+i+j)\ge0
+\tag{DR}\label{eq:DR}
+\]
+for \(i<j\) and \(S\subseteq E\setminus\{i,j\}\).  Indeed,
+\eqref{eq:DR} telescopes to all diminishing-return inequalities and hence all
+submodularity inequalities; together with terminal monotonicity it also
+telescopes to every nonnegative marginal.
+
+\begin{proposition}[Finite cone certificate]\label{prop:cone}
+The pointed \(15\)-dimensional cone cut out by
+\eqref{eq:terminal-monotonicity} and \eqref{eq:DR} has exactly \(41\)
+primitive extreme rays in \(11\) \(S_4\)-orbits.
+\end{proposition}
+
+\noindent
+\textit{Exact finite premise.}
+The standard-library double-description transcript reconstructs the \(28\)
+rows, starts from a certified simplicial cone, inserts the remaining \(13\)
+halfspaces, and ends with \(41\) rays.  Rank-\(14\) integer minors certify
+every final ray and every facet.  The cone-certificate SHA-256 is
+\[
+\texttt{4d99cba4266f6a9afbae04a9fff7a411cf450dfd78fd261d222a6d3a9d5ba13d},
+\]
+and the primitive-ray SHA-256 is
+\[
+\texttt{9f0f3d8e71de639468ea5915a4adfdff4056321040c7221def886e201624eff1}.
+\]
+The verifier reconstructs the defining rows and replays each
+double-description transition; the certificate is therefore a completeness
+certificate, not merely a supplied feasible ray list.
+
+For fixed \(p,q\), conic generation makes \eqref{eq:simultaneous}
+equivalent to its \(41\) ray inequalities, with the same \(q\) in every
+inequality.  Ten rays are the coverage functions
+\[
+h_A(S)=\one[S\cap A\ne\varnothing],
+\qquad 1\le|A|\le2.
+\tag{6.1}\label{eq:or-rays}
+\]
+Their inequalities are automatic for every \(p\in\D(x)\) and every
+\(q\in\DPI(x)\).  For \(A=\{i\}\), the slack is \(x_i\).  For
+\(A=\{i,j\}\), write \(u=x_i\), \(v=x_j\), and \(s=u+v\).  Then
+\[
+\E_qh_A=s-uv,
+\qquad
+\E_ph_A\le\min(1,s).
+\]
+If \(s\le1\), then \(uv\le s^2/4\le s/4\).  If \(s\ge1\), put
+\(a=1-u\), \(b=1-v\); then \(a+b\le1\), \(ab\le1/4\), and
+\(s-uv=1-ab\ge3/4\).  Thus only \(31\) ray inequalities remain for the
+central certificate.
+
+\subsection{The exact central certificate}\label{subsec:central-certificate}
+
+\begin{proposition}[Central certificate; computed exactly]
+\label{prop:central-certificate}
+For every five-column basis \(B\), every \(\lambda\) in its closed standard
+simplex whose induced marginal vector lies in \eqref{eq:central}, and the
+corresponding unrestricted law \(p\), at least one of the eight recipes below
+is a law \(q\in\DPI(x)\) whose eleven atom masses and all \(31\)
+nonautomatic simultaneous ray slacks are nonnegative.
+\end{proposition}
+
+The remainder of this subsection specifies the finite object and the exact
+checks establishing Proposition~\ref{prop:central-certificate}.
+
+Encode subsets by masks \(0,\ldots,15\), with bit \(i-1\) representing
+element \(i\).  Fix a five-mask first-moment basis
+\(B=(B_0,\ldots,B_4)\) and barycentric weights
+\[
+\lambda_k\ge0,
+\qquad
+\sum_{k=0}^4\lambda_k=1,
+\qquad
+p_{B_k}=\lambda_k.
+\tag{7.1}\label{eq:lambda}
+\]
+Then
+\[
+x_i=\sum_k\lambda_k\one_{i\in B_k}.
+\tag{7.2}\label{eq:x-lambda}
+\]
+
+\subsubsection{Eight explicit PI recipes}
+
+Let
+\[
+m(x)=(1,x_1,x_2,x_3,x_4,x_1x_2,x_1x_3,x_1x_4,
+x_2x_3,x_2x_4,x_3x_4)^T.
+\tag{7.3}\label{eq:moment-vector}
+\]
+For an \(11\)-mask set \(R\), let \(M_R\) be the \(11\times11\) matrix whose
+mask column records mass, four singleton indicators, and six pair
+indicators.  The eight recipe supports are
+\begin{verbatim}
+R_0 = (0,3,4,6,8,9,10,12,13,14,15)
+R_1 = (1,4,6,7,8,10,11,12,13,14,15)
+R_2 = (1,2,4,7,8,9,10,12,13,14,15)
+R_3 = (0,1,2,4,8,9,10,12,13,14,15)
+R_4 = (0,1,2,3,4,5,6,9,10,12,15)
+R_5 = (1,2,3,4,5,8,9,10,12,14,15)
+R_6 = (1,3,5,6,7,8,10,11,12,13,15)
+R_7 = (0,1,2,4,5,8,9,10,12,14,15)
+\end{verbatim}
+Every \(M_R\) is exactly invertible.  Recipe \(R\) is the law supported on
+\(R\) with atom vector
+\[
+q_R(x)=M_R^{-1}m(x).
+\tag{7.4}\label{eq:recipe}
+\]
+If its eleven entries are nonnegative, equations
+\eqref{eq:moment-vector}--\eqref{eq:recipe} make it a probability law with
+the required first and pair moments.  For each of the \(31\) nonautomatic
+cone rays \(r\), impose
+\[
+4\sum_{S\in R}q_{R,S}(x)r(S)
+-3\sum_{k=0}^4\lambda_kr(B_k)\ge0.
+\tag{7.5}\label{eq:ray-slack}
+\]
+Thus a recipe has \(42\) constraints: eleven atom inequalities and \(31\)
+dominance inequalities.  Since \(x\) is affine in \(\lambda\), every
+constraint is a rational polynomial of degree at most two in \(\lambda\).
+
+\subsubsection{Closed chamber cover}
+
+Inside the standard \(\lambda\)-simplex impose the homogeneous linear forms
+equivalent to \eqref{eq:central}.  Split first on
+\[
+T=x_1+x_2+x_3-1.
+\]
+The cell \(T\le0\) is one chamber.  On \(T\ge0\), split independently on
+\[
+P=x_1+x_2-1,
+\qquad
+H=1+x_1-x_2-x_3.
+\]
+This gives four more chambers.  Because both signs are non-strict, these five
+closed chambers cover the whole central cell, including all walls.
+
+Two basis-specific refinements are used, always with both closed signs:
+\begin{verbatim}
+B=(1,6,8,10,12):       2 lambda_0-lambda_1-lambda_3 = 0;
+
+B=(2,5,8,9,12), in the T>=0, P<=0, H>=0 chamber:
+    lambda_0+lambda_1-lambda_2+lambda_3-lambda_4 = 0,
+   -lambda_0+lambda_1-lambda_2-lambda_3+lambda_4 = 0.
+\end{verbatim}
+The latter two forms equal, respectively,
+\(2(x_1+x_2-1/2)\) and \(2(x_3-1/2)\).  Both-sign splitting preserves
+coverage even on their common zero sheets.
+
+For each basis and sign chamber, exact active-set enumeration lists every
+vertex of the bounded rational polytope.  A point is a vertex exactly when
+four active inequality normals, together with \(\sum\lambda=1\), have full
+rank; hence enumerating all four-row choices is complete.  Every nonempty
+bounded cell has a vertex.  Exact pulling triangulation then covers the cell:
+recursively choose the least vertex and cone it over pulling triangulations
+of all facets not containing it.  Facets are recovered from the original
+inequalities by exact affine-rank tests.
+
+\subsubsection{Exact quadratic checks on a simplex}
+
+Let \(v_0,\ldots,v_d\) be a simplex and write
+\(\lambda=\sum_i y_iv_i\), where \(y_i\ge0\) and \(\sum_i y_i=1\).  A
+quadratic constraint \(h\) has the exact representation
+\[
+h(\lambda)=y^THy.
+\tag{7.6}\label{eq:quadratic}
+\]
+The diagonal controls are \(h(v_i)\), and the off-diagonal controls are
+\[
+H_{ij}=2h\!\left(\frac{v_i+v_j}{2}\right)
+-\frac{h(v_i)+h(v_j)}2.
+\tag{7.7}\label{eq:bernstein}
+\]
+These are the degree-two Bernstein controls;
+\eqref{eq:bernstein} is an identity, not a positivity heuristic.
+
+\begin{lemma}[Quadratic simplex lemma]\label{lem:quadratic-simplex}
+Exact enumeration of every face-stationary affine set decides whether
+\eqref{eq:quadratic} is nonnegative on the whole simplex.
+\end{lemma}
+
+\begin{proof}
+If \(h\) is negative, its compact-simplex minimum is negative.  On the
+relative interior of its support face \(I\), Lagrange stationarity gives
+\[
+(Hy)_i=(Hy)_j\qquad(i,j\in I),
+\qquad
+\sum_{i\in I}y_i=1.
+\tag{7.8}\label{eq:stationarity}
+\]
+The exact checker intersects \eqref{eq:stationarity} with \(y\ge0\) by
+enumerating basic feasible solutions.  If \(y,z\) satisfy the same stationary
+system, then \(Hy=\alpha\mathbf 1\) and \(Hz=\beta\mathbf 1\) on \(I\), so
+symmetry gives
+\[
+\alpha=z^THy=y^THz=\beta.
+\]
+Consequently \(y^THy=\alpha=\beta=z^THz\): the quadratic value is constant
+on the stationary affine set.  Testing one exact feasible basic point per
+nonempty stationary set therefore detects a negative minimum if and only if
+one exists.  This also handles singular stationary systems and boundary
+minima.
+\end{proof}
+
+\subsubsection{Accepted simplex labels}
+
+For every simplex the certificate records one of the following exact labels.
+\begin{enumerate}
+\item \textbf{Ordinary recipe.}  All \(42\) constraints of one recipe are
+nonnegative on the simplex by Lemma~\ref{lem:quadratic-simplex}.
+
+\item \textbf{Complementary switch.}  Recipe \(R\) has at most one
+uncertified constraint \(u\), recipe \(R'\) has at most one uncertified
+constraint \(v\), and \(v=-cu\) identically for an exact rational \(c>0\).
+If \(u\ge0\), the first recipe works; if \(u\le0\), the second works.  At
+\(u=0\), both blockers vanish.  The recurring global identity is
+\[
+q_{R_7,\varnothing}=-2q_{R_5,\{1,2\}},
+\]
+where mask \(3\) represents \(\{1,2\}\).
+
+\item \textbf{Farkas/disjunctive label.}  For each selected recipe, all
+constraints except a listed blocker set are nonnegative.  For every selection
+of one blocker \(h_j\) from each selected recipe, the certificate gives exact
+weights \(c_j\ge0\), not all zero, such that
+\[
+\sum_jc_jh_j\ge0
+\tag{7.9}\label{eq:farkas}
+\]
+throughout the simplex, again by
+Lemma~\ref{lem:quadratic-simplex}.  If all selected recipes failed at one
+point, choose a strictly negative blocker from each.  The left side of
+\eqref{eq:farkas} would be strictly negative, a contradiction.  The
+one-blocker-per-recipe special case is called a Farkas label.
+\end{enumerate}
+The replay verifier recomputes all non-blocker constraints; it does not trust
+exploratory safety flags.
+
+\subsubsection{Retained exact certificate}
+
+The retained certificate covers all \(3{,}008\) bases and has the following
+exact totals:
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+closed chamber/sign records&15,048\\
+nonempty records&9,288\\
+empty records&5,760\\
+initial simplices/leaves&17,933\\
+ordinary-recipe leaves&17,906\\
+switch leaves&21\\
+Farkas/disjunctive leaves&6\\
+maximum subdivision depth&0\\
+\bottomrule
+\end{tabular}
+\end{center}
+The canonical payload is
+\path{verification/central/central-cell-cover-v1.json.gz}.  Its sizes and
+hashes are
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}ll@{}}
+\toprule
+raw JSON bytes&1,352,318\\
+gzip bytes&115,720\\
+raw JSON SHA-256&\texttt{c18f2096019a80ec495209863bdd8e46faa8e9e812c11e014cfc334b2a02f7ec}\\
+gzip SHA-256&\texttt{dbad1fcaee0e0285b448e1179c73ea747b5225c52dbd60da70064a1cc6727958}\\
+\bottomrule
+\end{tabular}
+\end{center}
+The exporting scan used exact \texttt{Fraction} arithmetic.  A standalone
+standard-library Python bundle reconstructed and replayed all four ranges,
+including \(286{,}253\) label-local exact quadratic checks.  A separate
+Node.js implementation using only built-ins and custom \texttt{BigInt}
+rationals independently reconstructed the \(3{,}008\) bases, every chamber
+H-polytope, all vertices and pulling simplices, the eight recipe inverses and
+\(42\) constraints, and all label semantics.  It performed \(754{,}395\)
+exact face-stationary quadratic tests and found no discrepancy.  Thus the
+simplex argument covers all real barycentric points, not merely rational or
+sampled points.
+
+\subsection{Assembly of the proof}\label{subsec:assembly}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+First normalize \(f\) using Lemma~\ref{lem:normalization}.  Fix a real
+\(x\in[0,1]^4\).  If \(\sum_i x_i\le1\),
+Lemma~\ref{lem:low-total} proves \eqref{eq:CG4}.  If
+\(\max_i x_i\ge2/3\), Lemma~\ref{lem:large-coordinate} proves it.
+
+Otherwise fix an extreme \(p\in\D(x)\), sort the coordinates, and relabel
+\(p\) accordingly.  Then \(x\) belongs to the closed central region
+\eqref{eq:central}.  By Lemma~\ref{lem:extreme-laws}, the support of \(p\)
+extends with zero weights to one of the \(3{,}008\) five-column bases.  Its
+barycentric vector lies in at least one of the closed chamber/sign cells and
+then in at least one simplex of that cell's pulling triangulation.  The
+simplex label supplies at least one recipe whose eleven atom probabilities
+and \(31\) nonautomatic dominance slacks are all nonnegative.  The ten
+remaining ray slacks are automatic.  Thus one
+\(q\in\DPI(x)\) satisfies all \(41\) ray inequalities and hence
+simultaneously dominates \(p\) on all of \(\Cfour\).
+
+Convexly combine these \(q\)'s to handle an arbitrary \(p\in\D(x)\).
+Lemma~\ref{lem:minimax} then gives \eqref{eq:CG4} for every normalized
+function.  Lemma~\ref{lem:normalization} restores arbitrary
+\(f(\varnothing)\ge0\), and undoing the coordinate permutation restores the
+original labeling.  This covers all real marginals, zero barycentric weights,
+chamber walls, the equality cases \(\sum x_i=1\) and
+\(\max x_i=2/3\), and all ties among sorted coordinates.
+
+For sharpness, take the two-element OR function embedded on four elements and
+\[
+x=(1/2,1/2,0,0).
+\]
+An unrestricted law may choose exactly one of the first
+two elements, so \(f^+(x)=1\).  Pairwise independence fixes their intersection
+at \(1/4\), so their union has probability \(3/4\) and
+\(f^{\mathrm{PI}}(x)=3/4\).  Hence the ratio is \(4/3\).
+\end{proof}
+
+\subsection{Scope and residual trust}\label{subsec:trust}
+
+The argument is computer-assisted.  Its finite premises use exact rational
+arithmetic rather than floating-point evidence, and the decisive central
+certificate has a second-language replay.  The residual trust base consists
+of the elementary polyhedral and quadratic lemmas stated above, the retained
+certificate bytes, JSON/gzip parsing, and the correctness of the
+standard-language runtimes and exact-arithmetic implementations.  This is not
+a Lean, Coq, or Isabelle formalization.  The appropriate status is
+\emph{candidate resolution pending expert review}.
+
+\ifdefined\CGFullPaper
+\else
+\begin{thebibliography}{9}
+\bibitem{RN2025}
+A.~Ramachandra and K.~Natarajan,
+\emph{Pairwise independent correlation gap},
+Operations Research Letters \textbf{60} (2025), Article 107255.
+\href{https://doi.org/10.1016/j.orl.2025.107255}{doi:10.1016/j.orl.2025.107255}.
+\end{thebibliography}
+\fi
+\ProofOnlyEndDocument
